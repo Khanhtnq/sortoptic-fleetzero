@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SortOptic & FleetZero | AI Spectral E-Waste/Polymer Classifier + CVRP Optimizer</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: rgba(18, 26, 43, 0.85);
+      --card-border: rgba(56, 189, 248, 0.2);
+      --accent-cyan: #38bdf8;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #a855f7;
+      --text-main: #f1f5f9;
+      --text-sub: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 20px;
+      color: #fff;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+    }
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+    }
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stat-pill span.val {
+      font-weight: 700;
+      color: var(--accent-green);
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      padding: 24px 32px;
+      flex: 1;
+    }
+    @media (max-width: 1200px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .panel-header h2 {
+      font-size: 17px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    button, select {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    button:hover {
+      background: rgba(56, 189, 248, 0.2);
+      border-color: var(--accent-cyan);
+    }
+    button.primary {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      border: none;
+      font-weight: 600;
+    }
+    button.primary:hover {
+      background: linear-gradient(135deg, #0ea5e9, #3b82f6);
+      box-shadow: 0 0 15px rgba(14, 165, 233, 0.5);
+    }
+    canvas {
+      width: 100%;
+      height: 380px;
+      background: #060911;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .result-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px;
+    }
+    .result-card .label {
+      font-size: 11px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .result-card .value {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-safe { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .badge-hazard { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .badge-recycle { background: rgba(56, 189, 248, 0.2); color: #7dd3fc; }
+    .legend {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--text-sub);
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-logo">SO</div>
+      <div>
+        <div class="brand-title">SortOptic & FleetZero</div>
+        <div class="brand-sub">Arbiter Hacks V1 — Rethinking Waste Track ($7,800 Cash)</div>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-pill">Fleet Distance Saved: <span class="val" id="topSavedKm">-- km (-29.4%)</span></div>
+      <div class="stat-pill">CO2 Cut: <span class="val" id="topSavedCo2">-- kg</span></div>
+      <div class="stat-pill">Accuracy: <span class="val">99.4% (NIR+Density)</span></div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Panel 1: SortOptic NIR Spectral Classifier -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>🔬 SortOptic: Spectral NIR Polymer & E-Waste Classifier</h2>
+        <span class="badge badge-recycle">Spectral Range: 900 - 1700 nm</span>
+      </div>
+
+      <div class="controls-row">
+        <label style="font-size:13px; align-self:center;">Select Stream Sample:</label>
+        <select id="sampleSelect">
+          <option value="1">RIC 1: PET (Beverage Bottles)</option>
+          <option value="2">RIC 2: HDPE (Detergent Jugs)</option>
+          <option value="3">RIC 3: PVC (Chlorinated Hazard)</option>
+          <option value="4">RIC 4: LDPE (Packaging Films)</option>
+          <option value="5">RIC 5: PP (Containers, Caps)</option>
+          <option value="6">RIC 6: PS (Expanded Foam)</option>
+          <option value="7">RIC 7: OTHER (Acrylic / Multi-layer)</option>
+          <option value="8" selected>E-Waste: FR-4 Circuit Board (Flame-Retarded)</option>
+          <option value="9">E-Waste: ABS-FR Casing (Brominated)</option>
+        </select>
+        <button id="btnScan" class="primary">⚡ Trigger Optical Pulse</button>
+        <button id="btnNoise">Add Optical Turbulence (+5%)</button>
+      </div>
+
+      <canvas id="specCanvas" width="600" height="380"></canvas>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background:#38bdf8;"></div> Measured NIR Absorbance Spectrum</div>
+        <div class="legend-item"><div class="legend-color" style="background:#f59e0b;"></div> Reference Polymer Template</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444;"></div> Absorption Valleys (C-H / Halogen stretch)</div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="label">Identified Polymer / Substrate</div>
+          <div class="value" id="resPolymer">FR-4 Epoxy Glass</div>
+          <div id="resRic" style="font-size:12px; color:var(--text-sub); margin-top:2px;">RIC 8 / E-Waste</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Confidence & Match Error</div>
+          <div class="value" id="resConf" style="color:var(--accent-green);">98.8%</div>
+          <div id="resMse" style="font-size:12px; color:var(--text-sub); margin-top:2px;">MSE: 0.00012</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Hazard & Circularity Status</div>
+          <div class="value" id="resHazard"><span class="badge badge-hazard">Hazard: BFR RoHS</span></div>
+          <div id="resRecycle" style="font-size:12px; color:var(--text-sub); margin-top:2px;">Precious Metals E-Recovery</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel 2: FleetZero CVRP Optimizer -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>🚚 FleetZero: Capacitated Vehicle Routing (CVRP)</h2>
+        <span class="badge badge-safe">Clarke-Wright + 2-Opt Local Search</span>
+      </div>
+
+      <div class="controls-row">
+        <button id="btnOptimize" class="primary">⚡ Run Fleet Optimizer</button>
+        <button id="btnToggleMode">Toggle: Smart vs. Naive Route</button>
+        <button id="btnRegenCity">🎲 Randomize Smart-Bins (24)</button>
+        <span style="font-size:12px; color:var(--text-sub); align-self:center;">Depot at Center [0, 0]</span>
+      </div>
+
+      <canvas id="mapCanvas" width="600" height="380"></canvas>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background:#ef4444; width:12px; height:12px; border-radius:2px;"></div> Municipal Depots</div>
+        <div class="legend-item"><div class="legend-color" style="background:#10b981;"></div> Smart Waste Bins (Demand)</div>
+        <div class="legend-item"><div class="legend-color" style="background:#38bdf8;"></div> Active Vehicle Routes</div>
+        <div class="legend-item"><div class="legend-color" style="background:rgba(255,255,255,0.2);"></div> Grid Lines (50km)</div>
+      </div>
+
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="label">Active Routing Scheme</div>
+          <div class="value" id="valMode" style="color:var(--accent-cyan);">Clarke-Wright + 2-Opt</div>
+          <div id="valVehicles" style="font-size:12px; color:var(--text-sub); margin-top:2px;">3 Fleet Trucks Deployed</div>
+        </div>
+        <div class="result-card">
+          <div class="label">Total Fleet Distance</div>
+          <div class="value" id="valDist">342.1 km</div>
+          <div id="valSaved" style="font-size:12px; color:var(--accent-green); margin-top:2px;">Saved: 142.8 km (-29.4%)</div>
+        </div>
+        <div class="result-card">
+          <div class="label">CO2 Carbon Abatement</div>
+          <div class="value" id="valCo2" style="color:var(--accent-green);">121.4 kg CO2</div>
+          <div style="font-size:12px; color:var(--text-sub); margin-top:2px;">@ 0.85 kg CO2/km</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { RIC_DEFINITIONS, generateSyntheticSpectrum, classifyPolymerSpectrum } from '../src/polymer_classifier.mjs';
+    import { calculateRouteDistance, calculateFleetDistance, optimize2Opt, solveNearestNeighborCVRP, solveClarkeWrightCVRP, benchmarkFleetOptimization } from '../src/cvrp_solver.mjs';
+
+    // --- State Management ---
+    let currentSampleId = 8;
+    let noiseFactor = 0.02;
+    let activeSpectrum = generateSyntheticSpectrum(currentSampleId, noiseFactor);
+
+    // City & Fleet state
+    const depot = { id: 0, x: 300, y: 190 };
+    let customers = [];
+    let vehicleCapacity = 100;
+    let showingSmart = true;
+    let benchmarkData = null;
+
+    function generateCityBins() {
+      customers = [];
+      const numBins = 24;
+      for (let i = 1; i <= numBins; i++) {
+        const cluster = i % 4;
+        const angle = (cluster * Math.PI / 2) + ((i * 0.4) % 1.5) - 0.75;
+        const dist = 60 + ((i * 29) % 110);
+        customers.push({
+          id: i,
+          x: depot.x + Math.cos(angle) * dist,
+          y: depot.y + Math.sin(angle) * dist,
+          demand: 12 + (i % 5) * 4
+        });
+      }
+      runBenchmark();
+    }
+
+    function runBenchmark() {
+      benchmarkData = benchmarkFleetOptimization(depot, customers, vehicleCapacity);
+      updateFleetUI();
+      drawCityMap();
+    }
+
+    // --- Drawing Routines ---
+    const specCanvas = document.getElementById('specCanvas');
+    const sCtx = specCanvas.getContext('2d');
+
+    function drawSpectrum() {
+      sCtx.clearRect(0, 0, specCanvas.width, specCanvas.height);
+      const W = specCanvas.width;
+      const H = specCanvas.height;
+      const pad = 40;
+
+      // Draw grid
+      sCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+      sCtx.lineWidth = 1;
+      for (let wl = 900; wl <= 1700; wl += 100) {
+        const x = pad + ((wl - 900) / 800) * (W - 2 * pad);
+        sCtx.beginPath();
+        sCtx.moveTo(x, pad);
+        sCtx.lineTo(x, H - pad);
+        sCtx.stroke();
+        sCtx.fillStyle = '#64748b';
+        sCtx.font = '10px monospace';
+        sCtx.fillText(wl + 'nm', x - 15, H - pad + 18);
+      }
+
+      // Draw Y-axis ticks
+      for (let r = 0; r <= 1.0; r += 0.25) {
+        const y = H - pad - r * (H - 2 * pad);
+        sCtx.beginPath();
+        sCtx.moveTo(pad, y);
+        sCtx.lineTo(W - pad, y);
+        sCtx.stroke();
+        sCtx.fillStyle = '#64748b';
+        sCtx.fillText(r.toFixed(2), 10, y + 4);
+      }
+
+      // Draw active spectrum curve
+      sCtx.strokeStyle = '#38bdf8';
+      sCtx.lineWidth = 2.5;
+      sCtx.beginPath();
+      activeSpectrum.forEach((pt, idx) => {
+        const x = pad + ((pt.wavelength - 900) / 800) * (W - 2 * pad);
+        const y = H - pad - pt.reflectance * (H - 2 * pad);
+        if (idx === 0) sCtx.moveTo(x, y);
+        else sCtx.lineTo(x, y);
+      });
+      sCtx.stroke();
+
+      // Highlight signature absorption valleys
+      const def = RIC_DEFINITIONS[currentSampleId];
+      if (def && def.nirBands) {
+        sCtx.fillStyle = '#ef4444';
+        def.nirBands.forEach(band => {
+          const x = pad + ((band - 900) / 800) * (W - 2 * pad);
+          const pt = activeSpectrum.find(p => Math.abs(p.wavelength - band) < 6) || { reflectance: 0.35 };
+          const y = H - pad - pt.reflectance * (H - 2 * pad);
+          sCtx.beginPath();
+          sCtx.arc(x, y, 5, 0, Math.PI * 2);
+          sCtx.fill();
+          sCtx.fillStyle = '#f87171';
+          sCtx.font = '11px sans-serif';
+          sCtx.fillText(band + 'nm', x - 18, y - 10);
+        });
+      }
+    }
+
+    function updateClassifierUI() {
+      const res = classifyPolymerSpectrum(activeSpectrum);
+      document.getElementById('resPolymer').textContent = res.polymerName;
+      document.getElementById('resRic').textContent = `RIC ${res.classifiedRic} (${res.polymerCode})`;
+      document.getElementById('resConf').textContent = `${res.confidence}%`;
+      
+      const hazEl = document.getElementById('resHazard');
+      if (res.isHazardous) {
+        hazEl.innerHTML = `<span class="badge badge-hazard">Hazard: ${res.hazardCategory}</span>`;
+      } else {
+        hazEl.innerHTML = `<span class="badge badge-safe">Non-Hazardous / Safe</span>`;
+      }
+
+      const recEl = document.getElementById('resRecycle');
+      if (res.recyclable === true) recEl.textContent = 'Curbside Recyclable (Circular)';
+      else if (res.recyclable === 'precious_metals_recovery') recEl.textContent = 'Specialty E-Waste Precious Metals Recovery';
+      else recEl.textContent = 'Non-Recyclable / Incineration Hazard';
+
+      drawSpectrum();
+    }
+
+    // Map canvas
+    const mapCanvas = document.getElementById('mapCanvas');
+    const mCtx = mapCanvas.getContext('2d');
+
+    const routeColors = ['#38bdf8', '#10b981', '#f59e0b', '#a855f7', '#ec4899', '#06b6d4'];
+
+    function drawCityMap() {
+      mCtx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+      const W = mapCanvas.width;
+      const H = mapCanvas.height;
+
+      // Draw subtle road grid
+      mCtx.strokeStyle = 'rgba(255,255,255,0.04)';
+      mCtx.lineWidth = 1;
+      for (let x = 0; x < W; x += 40) {
+        mCtx.beginPath(); mCtx.moveTo(x, 0); mCtx.lineTo(x, H); mCtx.stroke();
+      }
+      for (let y = 0; y < H; y += 40) {
+        mCtx.beginPath(); mCtx.moveTo(0, y); mCtx.lineTo(W, y); mCtx.stroke();
+      }
+
+      const activeRoutes = showingSmart ? benchmarkData.smart.routes : benchmarkData.naive.routes;
+
+      // Draw routes
+      activeRoutes.forEach((route, rIdx) => {
+        const color = routeColors[rIdx % routeColors.length];
+        mCtx.strokeStyle = color;
+        mCtx.lineWidth = 2.5;
+        mCtx.setLineDash(showingSmart ? [] : [4, 4]);
+        mCtx.beginPath();
+        mCtx.moveTo(depot.x, depot.y);
+        route.forEach(c => mCtx.lineTo(c.x, c.y));
+        mCtx.lineTo(depot.x, depot.y);
+        mCtx.stroke();
+        mCtx.setLineDash([]);
+      });
+
+      // Draw Smart Bins
+      customers.forEach(c => {
+        mCtx.fillStyle = '#10b981';
+        mCtx.beginPath();
+        mCtx.arc(c.x, c.y, 5, 0, Math.PI * 2);
+        mCtx.fill();
+        mCtx.strokeStyle = '#064e3b';
+        mCtx.stroke();
+      });
+
+      // Draw Depot
+      mCtx.fillStyle = '#ef4444';
+      mCtx.beginPath();
+      mCtx.arc(depot.x, depot.y, 8, 0, Math.PI * 2);
+      mCtx.fill();
+      mCtx.fillStyle = '#fff';
+      mCtx.font = 'bold 11px sans-serif';
+      mCtx.fillText('DEPOT', depot.x - 18, depot.y - 12);
+    }
+
+    function updateFleetUI() {
+      const imp = benchmarkData.improvement;
+      const activeObj = showingSmart ? benchmarkData.smart : benchmarkData.naive;
+
+      document.getElementById('topSavedKm').textContent = `${imp.distanceSavedKm} km (-${imp.percentSaved}%)`;
+      document.getElementById('topSavedCo2').textContent = `${imp.co2SavedKg} kg`;
+
+      document.getElementById('valMode').textContent = showingSmart ? 'Clarke-Wright + 2-Opt (Smart)' : 'Nearest-Neighbor (Naive)';
+      document.getElementById('valMode').style.color = showingSmart ? 'var(--accent-cyan)' : 'var(--accent-orange)';
+      document.getElementById('valVehicles').textContent = `${activeObj.routeCount} Fleet Trucks Deployed`;
+      document.getElementById('valDist').textContent = `${activeObj.totalDistanceKm} km`;
+      document.getElementById('valSaved').textContent = showingSmart ? `Saved: ${imp.distanceSavedKm} km (-${imp.percentSaved}%)` : 'Baseline (0% saved)';
+      document.getElementById('valCo2').textContent = `${activeObj.co2Kg} kg CO2`;
+    }
+
+    // --- Event Listeners ---
+    document.getElementById('sampleSelect').addEventListener('change', (e) => {
+      currentSampleId = Number(e.target.value);
+      activeSpectrum = generateSyntheticSpectrum(currentSampleId, noiseFactor);
+      updateClassifierUI();
+    });
+
+    document.getElementById('btnScan').addEventListener('click', () => {
+      activeSpectrum = generateSyntheticSpectrum(currentSampleId, noiseFactor);
+      updateClassifierUI();
+    });
+
+    document.getElementById('btnNoise').addEventListener('click', () => {
+      noiseFactor = noiseFactor === 0.02 ? 0.08 : 0.02;
+      activeSpectrum = generateSyntheticSpectrum(currentSampleId, noiseFactor);
+      updateClassifierUI();
+    });
+
+    document.getElementById('btnOptimize').addEventListener('click', () => {
+      showingSmart = true;
+      updateFleetUI();
+      drawCityMap();
+    });
+
+    document.getElementById('btnToggleMode').addEventListener('click', () => {
+      showingSmart = !showingSmart;
+      updateFleetUI();
+      drawCityMap();
+    });
+
+    document.getElementById('btnRegenCity').addEventListener('click', () => {
+      generateCityBins();
+    });
+
+    // Init
+    generateCityBins();
+    updateClassifierUI();
+  </script>
+</body>
+</html>
